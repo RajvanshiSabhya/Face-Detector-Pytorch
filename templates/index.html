@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mood Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #6a11cb, #2575fc);
+      color: #fff;
+      text-align: center;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    h1 {
+      font-size: 2.5em;
+      margin: 20px 0;
+    }
+
+    nav {
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    nav a {
+      color: #fff;
+      text-decoration: none;
+      margin: 0 15px;
+      font-size: 1.2em;
+      transition: color 0.3s;
+    }
+
+    nav a:hover {
+      color: #ff6f61;
+    }
+
+    nav .logo {
+      font-size: 1.5em;
+      font-weight: bold;
+    }
+
+    #video {
+      width: 300px;
+      height: 200px;
+      border-radius: 10px;
+      border: 4px solid #fff;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      transition: transform 0.3s ease-in-out;
+    }
+
+    #video:hover {
+      transform: scale(1.05);
+    }
+
+    #mood, #recommendations {
+      margin: 20px auto;
+      font-size: 1.5em;
+      padding: 10px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      width: 80%;
+      max-width: 600px;
+    }
+
+    #recommendations ul {
+      list-style: none;
+      padding: 0;
+      margin: 10px 0;
+    }
+
+    #recommendations ul li {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 8px;
+      border-radius: 5px;
+      margin: 5px 0;
+      animation: fadeIn 1s ease;
+    }
+
+    #analyzeBtn {
+      background: #ff6f61;
+      border: none;
+      color: #fff;
+      padding: 10px 20px;
+      font-size: 1.2em;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s;
+      margin: 20px 0;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    #analyzeBtn:hover {
+      background: #ff3b3b;
+    }
+
+    .content {
+      flex: 1;
+    }
+
+    footer {
+      margin-top: 20px;
+      padding: 15px;
+      background: rgba(0, 0, 0, 0.5);
+      color: #ddd;
+      font-size: 0.9em;
+      animation: slideIn 1s ease;
+      text-align: center;
+    }
+
+    footer a {
+      color: #ff6f61;
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+
+    footer a:hover {
+      color: #ff3b3b;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="logo">Mood Tracker</div>
+    <div>
+      <a href="https://shashwat0202.github.io/complete-soul-space/">Home</a>
+
+    </div>
+  </nav>
+
+  <div class="content">
+    <h1>Mood Tracker</h1>
+    <video id="video" autoplay></video>
+    <canvas id="canvas" hidden></canvas>
+    <br>
+    <button id="analyzeBtn">Analyze Mood</button>
+    <div id="mood"></div>
+    <div id="recommendations"></div>
+  </div>
+
+  <footer>
+    <p><strong>Disclaimer:</strong> This AI model analyzes your mood based on visual input. Please note that the results are generated algorithmically and may not be 100% accurate. For professional advice, consult a qualified expert.</p>
+    <p>&copy; 2025 Mood Tracker. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+  </footer>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const moodDisplay = document.getElementById('mood');
+    const recommendationsDisplay = document.getElementById('recommendations');
+
+    // Access webcam
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then((stream) => video.srcObject = stream)
+      .catch((err) => console.error("Error accessing webcam:", err));
+
+    analyzeBtn.addEventListener('click', async () => {
+      // Capture image from video
+      const context = canvas.getContext('2d');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Send image to server for analysis
+      const imageData = canvas.toDataURL('image/jpeg');
+      const blob = await fetch(imageData).then(res => res.blob());
+
+      const formData = new FormData();
+      formData.append('image', blob, 'mood.jpg');
+
+      moodDisplay.textContent = "Analyzing...";
+      recommendationsDisplay.textContent = "";
+
+      // Send to backend
+      const response = await fetch('/analyze', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+      moodDisplay.textContent = `Detected Mood: ${result.mood}`;
+      recommendationsDisplay.innerHTML = `<ul>${result.recommendations.map(rec => `<li>${rec}</li>`).join('')}</ul>`;
+    });
+  </script>
+</body>
+</html>
